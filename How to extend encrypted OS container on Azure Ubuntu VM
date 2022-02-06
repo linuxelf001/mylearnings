@@ -1,0 +1,113 @@
+The article provide instructions on how to extend encrypted OS container on Azure Ubuntu VM. To give a background on the context:
+
+I have Ubuntu VM hosted on Azure
+30G OS disk encrypted with Azure disk encryption extension
+I resized my OS disk from 30G to 100G
+After the resize, as you can notice disk sda is 100G. My next step would be to extend root partition (/) from 29.8G to 100G
+
+**NOTE: Before you move forward with the steps, make sure you have a tested backup
+
+lsblk
+NAME          MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT
+fd0             2:0    1     4K  0 disk
+sda             8:0    0   100G  0 disk
+sda1          8:1    0  29.8G  0 part
+ osencrypt 252:0    0  29.8G  0 crypt /
+sda2          8:2    0 254.1M  0 part  /boot
+
+Houston! We see couple problems here. /boot is in second partition and an encrypted OS container.
+
+Procedure:
+
+Step-1): Backup all the files from /boot to a file on /
+
+1
+cd /; tar -czf boot.tar.gz /boot/
+Step-2): Collect the current UUID values and current partition table
+
+blkid
+      /dev/mapper/osencrypt: LABEL=“cloudimg-rootfs” UUID=“67e1c0a6-cdc9-4247-b2e5-dd20ef042025” TYPE=“ext4”
+      /dev/sda2: UUID=“ddb2facf-c63e-4ba0-8195-efabaa7033ad” TYPE=“ext2” PARTUUID=“c22b501f-02”
+      /dev/sda1: PARTUUID=“c22b501f-01”
+    
+
+      fdisk /dev/sda
+      Command (m for help): p
+      Disk /dev/sda: 100 GiB, 107374182400 bytes, 209715200 sectors
+      Units: sectors of 1 * 512 = 512 bytes
+      Sector size (logical/physical): 512 bytes / 4096 bytes
+      I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+      Disklabel type: dos
+      Disk identifier: 0xc22b501f
+    
+
+      Device     Boot    Start      End  Sectors   Size Id Type
+      /dev/sda1           2048 62390237 62388190  29.8G 83 Linux
+      /dev/sda2  *    62390238 62910539   520302 254.1M 83 Linux
+Step-3): Delete and recreate partitions based on the new requirements
+
+Command (m for help): d
+      Partition number (1,2, default 2): 2
+    
+
+      Partition 2 has been deleted.
+    
+
+      Command (m for help): d
+      Selected partition 1
+      Partition 1 has been deleted.
+    
+
+      Command (m for help): n
+      Partition type
+         p   primary (0 primary, 0 extended, 4 free)
+         e   extended (container for logical partitions)
+      Select (default p): p
+      Partition number (1-4, default 1):
+      First sector (2048-209715199, default 2048):
+      Last sector, +sectors or +size{K,M,G,T,P} (2048-209715199, default 209715199): 209194897
+    
+
+      Created a new partition 1 of type ‘Linux’ and of size 99.8 GiB.
+    
+
+      Command (m for help): n
+      Partition type
+         p   primary (1 primary, 0 extended, 3 free)
+         e   extended (container for logical partitions)
+      Select (default p): p
+      Partition number (2-4, default 2):
+      First sector (209194898-209715199, default 209195008):
+      Last sector, +sectors or +size{K,M,G,T,P} (209195008-209715199, default 209715199):
+    
+
+      Created a new partition 2 of type ‘Linux’ and of size 254 MiB.
+    
+
+      Save and quit
+    
+
+      wq
+Step-4): Umount /boot and then run partprobe
+
+umount /boot
+  partprobe
+Step-5): Recreate FS using same old UUID, remount /boot and move the files to /boot
+
+mkfs.ext2 -U ddb2facf-c63e-4ba0-8195-efabaa7033ad /dev/sda2
+  mount /boot
+  tar -xf boot.tar.gz -C /boot –strip-components=1
+Step-6): Resize the encrypted container
+
+cryptsetup resize osencrypt
+  resize2fs /dev/mapper/osencrypt
+Step-7): Reboot the server and make sure encrypted OS container has been extended!
+
+lsblk
+      NAME          MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINT
+      fd0             2:0    1    4K  0 disk
+      sda             8:0    0  100G  0 disk
+      sda1          8:1    0 99.8G  0 part
+       osencrypt 252:0    0 99.8G  0 crypt /
+      sda2          8:2    0  254M  0 part  /boot
+Mission accomplished.
