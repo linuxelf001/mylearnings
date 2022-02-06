@@ -1,9 +1,0 @@
-In a case, you want to delete the journal and then remake the journal below is a two step process:
-
-1) Process to delete the journal
-
-tune2fs -O ^has_journal /dev/sdx1
-
-2) Remake the journal
-
-tune2fs -O has_journal /dev/sdx1
