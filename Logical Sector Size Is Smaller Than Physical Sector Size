@@ -1,7 +1,9 @@
-Logical sector size is almost always 512 bytes and has been the sector size since the original IBM PC with its 5.25" floppies. A lot of programs that deal with disks and sectors directly assume a sector is 512 bytes. However, some programs have adapted to look up the sector size and deal with it.
+Logical sector size is almost always 512 bytes and has been the sector size since the original IBM PC with its 5.25" floppies. 
+A lot of programs that deal with disks and sectors directly assume a sector is 512 bytes. However, some programs have adapted to look up the sector size and deal with it.
+Physical sector size is the size of actual sectors on the disk. 4096 bytes allows for more efficient storage on the disk, and is increasingly common on magnetic hard disks. 
+SSDs usually use even larger physical sectors, but will still often report 512 or 4096 bytes for compatibility reasons.
+In case where logical and physical sizes are different, kernel translates requests and talks to the drive in terms of physical sectors.
 
-Physical sector size is the size of actual sectors on the disk. 4096 bytes allows for more efficient storage on the disk, and is increasingly common on magnetic hard disks. SSDs usually use even larger physical sectors, but will still often report 512 or 4096 bytes for compatibility reasons.
-
-In case where logical and physical sizes are different (as shown above), kernel translates requests and talks to the drive in terms of physical sectors.
-
-When creating a new partition make sure you're not in DOS compatibility mode and fdisk will align everything to reasonable boundaries. Most modern fdisk builds have DOS compatibility off by defaut, but you can check by entering c, which will toggle it and tell you what you've just set it to. If you use DOS compatibility mode, it will align partitions to cylinders instead of megabytes and you will see a serious performance hit on 4K sector disks.
+When creating a new partition make sure you're not in DOS compatibility mode and fdisk will align everything to reasonable boundaries. 
+Most modern fdisk builds have DOS compatibility off by defaut, but you can check by entering c, which will toggle it and tell you what you've just set it to. 
+If you use DOS compatibility mode, it will align partitions to cylinders instead of megabytes and you will see a serious performance hit on 4K sector disks.
