@@ -1,0 +1,24 @@
+This post lists how to convert MPEG-2 video CD to mp4 file. I have a video MPEG-2 format with 4G size.
+
+As a first step, I used ddrescue to convert to iso
+
+ddrescue -c 1024 /dev/sr0 disc1.iso disc1.log
+To view, the contents of ISO, one way is to use ffmpeg. {ffmpeg -i disc1.iso}
+
+Next, mount the ISO at a mount point and then use ffmpeg to convert to mp4. Since 4GB file has been converted to four 1GB VOB files, we need to concat and then map both video and audio stream
+
+mount disc1.iso /rescue -o loop ro
+cd /rescue/VIDEO_TS
+ffmpeg -i concat:VTS_01_1.VOB/|VTS_02_2.VOB/|VTS_03_3.VOB/|VTS_04_4.VOB -map 0:v -map 0:a -c:v libx264 -crf 24 -vf yadif -c:a mp3 -b:a 192k ../../disc1.mp4
+
+For more information on the flags:
+
+0:v : It maps all into video stream
+0:a : It maps all into audio stream
+-c:v : codec for video
+-crf : constant rate factor
+-vf : video filter
+-c:a : codec for audio
+-b:a : bit rate for audio
+
+Upon converting, I have a slick version of mp4video with 670MB.
