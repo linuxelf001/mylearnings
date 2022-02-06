@@ -1,0 +1,14 @@
+Volume bitmap is an array of bits that tracks which blocks are in use and which are free.
+
+Let’s interpret couple bitmap log messages
+
+kernel: EXT4-fs error (device dm-5): ext4_read_block_bitmap: Cannot read block bitmap - block_group = 550, block_bitmap = 18030436
+kernel: EXT4-fs (dm-5): delayed block allocation failed for inode 653024 at logical offset 9425 with max blocks 7 with error -5
+
+First line suggests, it encountered an I/O error trying to read block bitmap. Typically this mean, there is either a problem with the connection from the computer/vm/server to the storage or volume is severely corrupted.
+Second line suggests, it’s a delayed block allocation failure, which mean it tried to write data to a file, but ext4 couldn’t allocate a block. Also it informs error -5, which is EIO – I/O error [Tip: Do you know, Linux calls will return file handles as positive numbers, and represent errors by returning a negative number)
+
+Now, it’s time for a question (~!~)
+
+-> When a write call occours, does it read bitmap for every call?
+No, it’s cached in RAM. It has to be written when blocks are allocated.
