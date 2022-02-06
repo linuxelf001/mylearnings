@@ -1,0 +1,20 @@
+Dirty memory is disk write cache. When you write to files, it creates dirty memory that is then flushed to disk at the I/O scheduler pace.
+
+As a next step, lets see the current dirty memory values set on my virtual server.
+
+sysctl -a | grep dirty
+vm.dirty_background_bytes = 0
+vm.dirty_background_ratio = 10
+vm.dirty_bytes = 0
+vm.dirty_expire_centisecs = 3000
+vm.dirty_ratio = 30
+vm.dirty_writeback_centisecs = 500
+
+Cool, so at more than 10% of system RAM used for dirty pages, it will begin flushing in the background. At 30%, writes will start to block.
+
+vm.dirty_background_ratio lets you allocate more dirty memory if needed. It’s how much dirty memory to allow before starting a flush. Please be aware, if you have more dirty memory sitting around, the more you lose if the system goes hard shutdown.
+vm.dirty_ratio defines hard value. After hitting 30%, it will block until some data has been committed to disk.
+vmdirty_expire_centisecs is how long dirty memory can stay before the system flushes it to disk regardless.
+vm.dirty_writeback_centisecs is just how often it checks whether it needs to do anything.
+
+Depending upon the use case, you can tune the parameters to meet your requirements.
